@@ -34,16 +34,6 @@ public class JwtUtils {
     @Value("${spring.ecom.app.jwtCookieName}")
     private String jwtCookie;
 
-    // Getting JWT from header
-//    public String getJWTFromHeader(HttpServletRequest request){
-//        String bearerToken=request.getHeader("Authorization");
-//        logger.debug("Authorization Header: {}",bearerToken);
-//        if(bearerToken!=null&&bearerToken.startsWith("Bearer ")){
-//            return bearerToken.substring(7);
-//        }
-//        return null;
-//    }
-
     public String getJWTFromCookies(HttpServletRequest request){
         Cookie cookie= WebUtils.getCookie(request,jwtCookie);
         if(cookie != null){
@@ -51,6 +41,14 @@ public class JwtUtils {
         }else{
             return null;
         }
+    }
+
+    public String getJWTFromHeader(HttpServletRequest request){
+        String bearerToken=request.getHeader("Authorization");
+        if(bearerToken!=null&&bearerToken.startsWith("Bearer ")){
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 
     public ResponseCookie generateJwtCookie(UserDetailsImpl userPrincipal){

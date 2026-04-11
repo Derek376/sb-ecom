@@ -55,9 +55,24 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     }
 
+//    private String parseJWT(HttpServletRequest request) {
+//        String jwt=jwtUtils.getJWTFromCookies(request);
+//        logger.debug("AuthTokenFilter.java: {}",jwt);
+//        return jwt;
+//    }
+
     private String parseJWT(HttpServletRequest request) {
-        String jwt=jwtUtils.getJWTFromCookies(request);
-        logger.debug("AuthTokenFilter.java: {}",jwt);
-        return jwt;
+        String jwtFromCookies=jwtUtils.getJWTFromCookies(request);
+        if(jwtFromCookies!=null){
+            logger.debug("JWT found in cookies: {}",jwtFromCookies);
+            return jwtFromCookies;
+        }
+
+        String jwtFromHeader=jwtUtils.getJWTFromHeader(request);
+        if(jwtFromHeader!=null) {
+            logger.debug("JWT found in header: {}", jwtFromHeader);
+            return jwtFromHeader;
+        }
+        return null;
     }
 }
