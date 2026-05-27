@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### macOS ###
+.DS_Store
+
+### Logs ###
+*.log
+
+### Local secrets (copy from application-local.properties.example) ###
+src/main/resources/application-local.properties
+
+### User-uploaded product images ###
+images/*
+!images/.gitkeep

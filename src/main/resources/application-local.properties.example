@@ -1,0 +1,10 @@
+# Copy this file to application-local.properties and fill in your values.
+# application-local.properties is gitignored and will not be committed.
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/ecommerce
+spring.datasource.username=YOUR_DB_USERNAME
+spring.datasource.password=YOUR_DB_PASSWORD
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Use a long random secret; must be valid Base64 if your JwtUtils decodes it as Base64
+spring.app.jwtSecret=REPLACE_WITH_YOUR_JWT_SECRET
