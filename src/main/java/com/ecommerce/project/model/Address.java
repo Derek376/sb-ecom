@@ -43,18 +43,18 @@ public class Address {
 
     @NotBlank
     @Size(min = 5, message = "Pin code must be at least 5 characters long")
-    private String pinCode;
+    private String eirCode;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    public Address(String street, String buildingName, String city, String state, String country, String pinCode) {
+    public Address(String street, String buildingName, String city, String state, String country, String eirCode) {
         this.street = street;
         this.buildingName = buildingName;
         this.city = city;
         this.state = state;
         this.country = country;
-        this.pinCode = pinCode;
+        this.eirCode = eirCode;
     }
 }
