@@ -1,6 +1,6 @@
 # sb-ecom — Spring Boot E-commerce API
 
-REST API backend for a full-stack e-commerce application. Built with Spring Boot, it provides product catalog, shopping cart, order placement, user authentication, and shipping address management for the companion [react-ecom](../react-ecom) frontend.
+REST API backend for a full-stack e-commerce application. Built with Spring Boot, it provides product catalog, shopping cart, order placement, user authentication, and shipping address management for the companion [react-ecom](https://github.com/Derek376/react-ecom) frontend.
 
 ## Tech Stack
 
