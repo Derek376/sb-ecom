@@ -11,6 +11,7 @@ import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.repositories.CartRepository;
 import com.ecommerce.project.repositories.CategoryRepository;
 import com.ecommerce.project.repositories.ProductRepository;
+import com.ecommerce.project.util.ImageUrlUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,11 +47,11 @@ public class ProductServiceImpl implements ProductService{
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private ImageUrlUtil imageUrlUtil;
+
     @Value("${project.image}")
     private String path;
-
-    @Value("${image.base.url}")
-    private String imageBaseUrl;
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -111,7 +112,7 @@ public class ProductServiceImpl implements ProductService{
         List<ProductDTO> productDTOS=products.stream()
                 .map(product->{
                     ProductDTO productDTO= modelMapper.map(product, ProductDTO.class);
-                    productDTO.setImage(constructImageUrl(product.getImage()));
+                    productDTO.setImage(imageUrlUtil.constructImageUrl(product.getImage()));
                     return productDTO;
                 })
                 .toList();
@@ -125,10 +126,6 @@ public class ProductServiceImpl implements ProductService{
         productResponse.setLastPage(productPage.isLast());
 
         return productResponse;
-    }
-
-    private String constructImageUrl(String imageName){
-        return imageBaseUrl.endsWith("/")?imageBaseUrl+imageName:imageBaseUrl+"/"+imageName;
     }
 
     @Override

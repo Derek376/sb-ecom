@@ -12,6 +12,7 @@ import com.ecommerce.project.repositories.CartItemRepository;
 import com.ecommerce.project.repositories.CartRepository;
 import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.util.AuthUtil;
+import com.ecommerce.project.util.ImageUrlUtil;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class CartServiceImpl implements CartService {
 
     @Autowired
     private AuthUtil authUtil;
+
+    @Autowired
+    private ImageUrlUtil imageUrlUtil;
 
     @Autowired
     ModelMapper modelMapper;
@@ -130,6 +134,7 @@ public class CartServiceImpl implements CartService {
         List<ProductDTO> products = cart.getCartItems().stream().map(item -> {
                     ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
                     productDTO.setQuantity(item.getQuantity());
+                    productDTO.setImage(imageUrlUtil.constructImageUrl(item.getProduct().getImage()));
                     return productDTO;
                 })
                 .toList();
@@ -237,6 +242,7 @@ public class CartServiceImpl implements CartService {
         cartItemRepository.save(cartItem);
     }
 
+    @Transactional
     @Override
     public String createOrUpdateCartWithItems(List<CartItemDTO> cartItems) {
         String emailId = authUtil.loggedInEmail();
@@ -254,7 +260,7 @@ public class CartServiceImpl implements CartService {
         double totalPrice = 0.00;
 
         for (CartItemDTO cartItemDTO : cartItems) {
-            Long productId = cartItemDTO.getProductDTO().getProductId();
+            Long productId = cartItemDTO.getProductId();
             Integer quantity = cartItemDTO.getQuantity();
 
             Product product = productRepository.findById(productId)
