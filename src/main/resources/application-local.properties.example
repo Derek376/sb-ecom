@@ -8,3 +8,6 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # Use a long random secret; must be valid Base64 if your JwtUtils decodes it as Base64
 spring.app.jwtSecret=REPLACE_WITH_YOUR_JWT_SECRET
+
+# STRIPE KEYS
+stripe.secret.key=YOUR_STRIPE_SECRET_KEY

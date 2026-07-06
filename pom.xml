@@ -138,6 +138,12 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+		<dependency>
+			<groupId>com.stripe</groupId>
+			<artifactId>stripe-java</artifactId>
+			<version>32.2.0</version>
+		</dependency>
+
 
     </dependencies>
 
