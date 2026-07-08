@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService{
         Order order = new Order();
         order.setEmail(email);
         order.setOrderDate(LocalDate.now());
-        order.setTotalAmount(cart.getTotalPrice());
+        order.setTotalAmount(Math.round(cart.getTotalPrice() * 100.0) / 100.0);
         order.setOrderStatus("Order Accepted !");
         order.setAddress(address);
 
