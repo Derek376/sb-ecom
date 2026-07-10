@@ -1,7 +1,9 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.config.AppConstant;
 import com.ecommerce.project.payload.OrderDTO;
 import com.ecommerce.project.payload.OrderRequestDTO;
+import com.ecommerce.project.payload.OrderResponse;
 import com.ecommerce.project.payload.StripePaymentDTO;
 import com.ecommerce.project.service.OrderService;
 import com.ecommerce.project.service.StripeService;
@@ -29,8 +31,8 @@ public class OrderController {
     @PostMapping("/order/users/payments/{paymentMethod}")
     public ResponseEntity<OrderDTO> orderProducts(@PathVariable String paymentMethod,
                                                   @RequestBody OrderRequestDTO orderRequestDTO) {
-        String email= authUtil.loggedInEmail();
-        OrderDTO order=orderService.placeOrder(
+        String email = authUtil.loggedInEmail();
+        OrderDTO order = orderService.placeOrder(
                 email,
                 orderRequestDTO.getAddressId(),
                 paymentMethod,
@@ -45,7 +47,18 @@ public class OrderController {
     @PostMapping("/order/stripe-client-secret")
     public ResponseEntity<String> createStripeClientSecret(@RequestBody StripePaymentDTO stripePaymentDTO) throws StripeException {
         System.out.println("StripePaymentDTO: " + stripePaymentDTO);
-        PaymentIntent paymentIntent=stripeService.paymentIntent(stripePaymentDTO);
+        PaymentIntent paymentIntent = stripeService.paymentIntent(stripePaymentDTO);
         return new ResponseEntity<>(paymentIntent.getClientSecret(), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/admin/orders")
+    public ResponseEntity<OrderResponse> getAllOrders(
+            @RequestParam(name = "pageNumber", defaultValue = AppConstant.PAGE_NUMBER, required = false) Integer pageNumber,
+            @RequestParam(name = "pageSize", defaultValue = AppConstant.PAGE_SIZE, required = false) Integer pageSize,
+            @RequestParam(name = "sortBy", defaultValue = AppConstant.SORT_ORDERS_BY, required = false) String sortBy,
+            @RequestParam(name = "sortOrder", defaultValue = AppConstant.SORT_DIR, required = false) String sortOrder
+    ) {
+        OrderResponse orderResponse = orderService.getAllOrders(pageNumber, pageSize, sortBy, sortOrder);
+        return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 }

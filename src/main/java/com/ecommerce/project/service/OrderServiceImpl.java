@@ -5,10 +5,15 @@ import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.OrderDTO;
 import com.ecommerce.project.payload.OrderItemDTO;
+import com.ecommerce.project.payload.OrderResponse;
 import com.ecommerce.project.repositories.*;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class OrderServiceImpl implements OrderService{
+public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private CartRepository cartRepository;
@@ -46,13 +51,13 @@ public class OrderServiceImpl implements OrderService{
     @Transactional
     public OrderDTO placeOrder(String email, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
         // Getting User Cart
-        Cart cart=cartRepository.findCartByEmail(email);
-        if(cart==null){
+        Cart cart = cartRepository.findCartByEmail(email);
+        if (cart == null) {
             throw new ResourceNotFoundException("Cart", "email", email);
         }
 
-        Address address=addressRepository.findById(addressId)
-                .orElseThrow(()->new ResourceNotFoundException("Address", "id", addressId));
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
 
         // Create a new Order with payment info
         Order order = new Order();
@@ -62,22 +67,22 @@ public class OrderServiceImpl implements OrderService{
         order.setOrderStatus("Order Accepted !");
         order.setAddress(address);
 
-        Payment payment = new Payment(paymentMethod,pgPaymentId, pgStatus, pgResponseMessage, pgName);
+        Payment payment = new Payment(paymentMethod, pgPaymentId, pgStatus, pgResponseMessage, pgName);
         payment.setOrder(order);
-        payment=paymentRepository.save(payment);
+        payment = paymentRepository.save(payment);
         order.setPayment(payment);
 
-        Order savedOrder=orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
 
         // Get items from the cart into the order items
-        List<CartItem> cartItems=cart.getCartItems();
-        if(cartItems.isEmpty()){
+        List<CartItem> cartItems = cart.getCartItems();
+        if (cartItems.isEmpty()) {
             throw new APIexception("Cart is empty. Cannot place order.");
         }
 
-        List<OrderItem> orderItems= new ArrayList<>();
-        for(CartItem cartItem: cartItems){
-            OrderItem orderItem= new OrderItem();
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CartItem cartItem : cartItems) {
+            OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);
             orderItem.setProduct(cartItem.getProduct());
             orderItem.setQuantity(cartItem.getQuantity());
@@ -85,25 +90,50 @@ public class OrderServiceImpl implements OrderService{
             orderItem.setOrderedProductPrice(cartItem.getProductPrice());
             orderItems.add(orderItem);
         }
-        orderItems=orderItemRepository.saveAll(orderItems);
+        orderItems = orderItemRepository.saveAll(orderItems);
 
         // Update product stock
-        cart.getCartItems().forEach(item->{
-            int quantity=item.getQuantity();
-            Product product=item.getProduct();
-            product.setQuantity(product.getQuantity()-quantity);
+        cart.getCartItems().forEach(item -> {
+            int quantity = item.getQuantity();
+            Product product = item.getProduct();
+            product.setQuantity(product.getQuantity() - quantity);
             productRepository.save(product);
             // Clear the cart
             cartService.deleteProductFromCart(cart.getCartId(), product.getProductId());
         });
 
         // Send back the order summary
-        OrderDTO orderDTO=modelMapper.map(savedOrder, OrderDTO.class);
-        orderItems.forEach(item->
+        OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
+        orderItems.forEach(item ->
                 orderDTO.getOrderItems().add(
                         modelMapper.map(item, OrderItemDTO.class)
                 ));
         orderDTO.setAddressId(addressId);
         return orderDTO;
+    }
+
+    @Override
+    public OrderResponse getAllOrders(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Page<Order> pageOrders = orderRepository.findAll(pageDetails);
+
+        List<Order> orders = pageOrders.getContent();
+
+        List<OrderDTO> orderDTOs = orders.stream()
+                .map(order -> modelMapper.map(order, OrderDTO.class))
+                .toList();
+
+        OrderResponse orderResponse=new OrderResponse();
+        orderResponse.setContent(orderDTOs);
+        orderResponse.setPageNumber(pageOrders.getNumber());
+        orderResponse.setPageSize(pageOrders.getSize());
+        orderResponse.setTotalElements(pageOrders.getTotalElements());
+        orderResponse.setTotalPages(pageOrders.getTotalPages());
+        orderResponse.setLastPage(pageOrders.isLast());
+        return orderResponse;
     }
 }
