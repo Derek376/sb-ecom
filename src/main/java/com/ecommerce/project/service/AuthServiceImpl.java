@@ -4,6 +4,8 @@ import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.Role;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AuthenticationResult;
+import com.ecommerce.project.payload.UserDTO;
+import com.ecommerce.project.payload.UserResponse;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.security.jwt.JwtUtils;
@@ -13,7 +15,10 @@ import com.ecommerce.project.security.response.MessageResponse;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
 import jakarta.transaction.Transactional;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,6 +50,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     PasswordEncoder encoder;
+
+    @Autowired
+    ModelMapper modelMapper;
 
     @Override
     public AuthenticationResult login(LoginRequest loginRequest) {
@@ -123,19 +131,36 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserInfoResponse getCurrentUserDetails(Authentication authentication) {
-        UserDetailsImpl userDetails= (UserDetailsImpl) authentication.getPrincipal();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        List<String> roles=userDetails.getAuthorities().stream()
-                .map(item->item.getAuthority())
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        UserInfoResponse response=new UserInfoResponse(userDetails.getId(),
-                userDetails.getUsername(),roles);
+        UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
+                userDetails.getUsername(), roles);
         return response;
     }
 
     @Override
     public ResponseCookie logoutUser() {
         return jwtUtils.getCleanJwtCookie();
+    }
+
+    @Override
+    public UserResponse getAllSellers(Pageable pageable) {
+        Page<User> allUsers = userRepository.findByRoleName(AppRole.ROLE_SELLER, pageable);
+
+        List<UserDTO> sellers = allUsers.getContent().stream()
+                .map(user -> modelMapper.map(user, UserDTO.class))
+                .toList();
+        UserResponse userResponse = new UserResponse();
+        userResponse.setContent(sellers);
+        userResponse.setPageNumber(allUsers.getNumber());
+        userResponse.setPageSize(allUsers.getSize());
+        userResponse.setTotalElements(allUsers.getTotalElements());
+        userResponse.setTotalPages(allUsers.getTotalPages());
+        userResponse.setLastPage(allUsers.isLast());
+        return userResponse;
     }
 }
