@@ -104,4 +104,24 @@ public class ProductController {
         ProductResponse productResponse=productService.getAllProductsForSeller(pageNumber,pageSize,sortBy,sortOrder);
         return new ResponseEntity<>(productResponse,HttpStatus.OK);
     }
+
+    @PutMapping("/seller/products/{productId}")
+    public ResponseEntity<ProductDTO> updateProductSeller(@PathVariable Long productId,
+                                                    @Valid @RequestBody ProductDTO productDTO){
+        ProductDTO updatedproductDTO=productService.updateProduct(productId,productDTO);
+        return new ResponseEntity<>(updatedproductDTO, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/seller/products/{productId}")
+    public ResponseEntity<ProductDTO> deleteProductSeller(@PathVariable Long productId){
+        ProductDTO deletedproductDTO=productService.deleteProduct(productId);
+        return new ResponseEntity<>(deletedproductDTO,HttpStatus.OK);
+    }
+
+    @PutMapping("/seller/products/{productId}/image")
+    public ResponseEntity<ProductDTO> UpdateProductImageSeller(@PathVariable Long productId,
+                                                         @RequestParam("image")MultipartFile image) throws IOException {
+        ProductDTO updatedproductDTO=productService.UpdateProductImage(productId,image);
+        return new ResponseEntity<>(updatedproductDTO,HttpStatus.OK);
+    }
 }
