@@ -11,3 +11,7 @@ spring.app.jwtSecret=REPLACE_WITH_YOUR_JWT_SECRET
 
 # STRIPE KEYS
 stripe.secret.key=YOUR_STRIPE_SECRET_KEY
+
+# Local HTTP cookies (localhost). Production uses Secure + SameSite=None from application.properties.
+app.jwt.cookie.secure=false
+app.jwt.cookie.same-site=Lax

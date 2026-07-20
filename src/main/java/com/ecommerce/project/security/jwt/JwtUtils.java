@@ -34,6 +34,16 @@ public class JwtUtils {
     @Value("${spring.ecom.app.jwtCookieName}")
     private String jwtCookie;
 
+    /**
+     * Cross-site cookies (Vercel frontend → Render API) require Secure + SameSite=None.
+     * For local HTTP (localhost), set app.jwt.cookie.secure=false and same-site=Lax.
+     */
+    @Value("${app.jwt.cookie.secure:true}")
+    private boolean cookieSecure;
+
+    @Value("${app.jwt.cookie.same-site:None}")
+    private String cookieSameSite;
+
     public String getJWTFromCookies(HttpServletRequest request){
         Cookie cookie= WebUtils.getCookie(request,jwtCookie);
         if(cookie != null){
@@ -56,8 +66,9 @@ public class JwtUtils {
         ResponseCookie cookie=ResponseCookie.from(jwtCookie,jwt)
                 .path("/api")
                 .maxAge(24 * 60 * 60)
-                .httpOnly(false)
-                .secure(false)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
                 .build();
         return cookie;
     }
@@ -65,6 +76,10 @@ public class JwtUtils {
     public ResponseCookie getCleanJwtCookie(){
         ResponseCookie cookie=ResponseCookie.from(jwtCookie,null)
                 .path("/api")
+                .maxAge(0)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
                 .build();
         return cookie;
     }
