@@ -9,6 +9,15 @@ public class ImageUrlUtil {
     private String imageBaseUrl;
 
     public String constructImageUrl(String imageName) {
-        return imageBaseUrl.endsWith("/")?imageBaseUrl+imageName:imageBaseUrl+"/"+imageName;
+        if (imageName == null || imageName.isBlank()) {
+            return imageName;
+        }
+        // Absolute URLs (Unsplash / Cloudinary / etc.) — do not prepend base URL
+        if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
+            return imageName;
+        }
+        return imageBaseUrl.endsWith("/")
+                ? imageBaseUrl + imageName
+                : imageBaseUrl + "/" + imageName;
     }
 }
