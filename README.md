@@ -11,8 +11,8 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 | | URL |
 |---|-----|
 | **Storefront** | [react-ecom (Vercel)](https://github.com/Derek376/react-ecom#live-demo) — see frontend README |
-| **API (Swagger)** | https://sb-ecom-vbza.onrender.com/swagger-ui/index.html |
-| **Sample public products** | https://sb-ecom-vbza.onrender.com/api/public/products?pageNumber=0&pageSize=10&sortBy=price&sortOrder=asc |
+| **API (Swagger)** | https://sb-ecom-s41k.onrender.com/swagger-ui/index.html |
+| **Sample public products** | https://sb-ecom-s41k.onrender.com/api/public/products?pageNumber=0&pageSize=10&sortBy=price&sortOrder=asc |
 
 > **Note:** The free Render instance sleeps when idle. The first request after inactivity can take **30–60 seconds**.
 
