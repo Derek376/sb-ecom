@@ -19,7 +19,7 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    @PostMapping("/admin/categories/{categoryId}/product")
+    @PostMapping("/seller/categories/{categoryId}/product")
     public ResponseEntity<ProductDTO> addProduct(@PathVariable Long categoryId,
                                                  @Valid @RequestBody ProductDTO productDTO){
         ProductDTO savedProductDTO=productService.addProduct(categoryId,productDTO);
@@ -91,6 +91,17 @@ public class ProductController {
             @RequestParam(name="sortOrder",defaultValue = AppConstant.SORT_DIR,required = false) String sortOrder
     ){
         ProductResponse productResponse=productService.getAllProductsForAdmin(pageNumber,pageSize,sortBy,sortOrder);
+        return new ResponseEntity<>(productResponse,HttpStatus.OK);
+    }
+
+    @GetMapping("/seller/products")
+    public ResponseEntity<ProductResponse> getAllProductsForSeller(
+            @RequestParam(name="pageNumber",defaultValue = AppConstant.PAGE_NUMBER,required = false) Integer pageNumber,
+            @RequestParam(name="pageSize",defaultValue = AppConstant.PAGE_SIZE,required = false) Integer pageSize,
+            @RequestParam(name="sortBy",defaultValue = AppConstant.SORT_PRODUCTS_BY,required = false) String sortBy,
+            @RequestParam(name="sortOrder",defaultValue = AppConstant.SORT_DIR,required = false) String sortOrder
+    ){
+        ProductResponse productResponse=productService.getAllProductsForSeller(pageNumber,pageSize,sortBy,sortOrder);
         return new ResponseEntity<>(productResponse,HttpStatus.OK);
     }
 }
