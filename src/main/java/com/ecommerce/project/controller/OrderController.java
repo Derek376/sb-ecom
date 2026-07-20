@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 public class OrderController {
@@ -70,6 +72,13 @@ public class OrderController {
     ) {
         OrderResponse orderResponse = orderService.getAllSellerOrders(pageNumber, pageSize, sortBy, sortOrder);
         return new ResponseEntity<>(orderResponse, HttpStatus.OK);
+    }
+
+    @GetMapping("/users/orders")
+    public ResponseEntity<List<OrderDTO>> getUserOrders() {
+        String email = authUtil.loggedInEmail();
+        List<OrderDTO> orders = orderService.getUserOrders(email);
+        return new ResponseEntity<>(orders, HttpStatus.OK);
     }
 
     @PutMapping("/admin/orders/{orderId}/status")

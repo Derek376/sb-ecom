@@ -189,4 +189,18 @@ public class OrderServiceImpl implements OrderService {
         orderResponse.setLastPage(pageOrders.isLast());
         return orderResponse;
     }
+
+    @Override
+    public List<OrderDTO> getUserOrders(String email) {
+        List<Order> orders = orderRepository.findByEmailOrderByOrderDateDesc(email);
+        return orders.stream()
+                .map(order -> {
+                    OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+                    if (order.getAddress() != null) {
+                        orderDTO.setAddressId(order.getAddress().getAddressId());
+                    }
+                    return orderDTO;
+                })
+                .toList();
+    }
 }
