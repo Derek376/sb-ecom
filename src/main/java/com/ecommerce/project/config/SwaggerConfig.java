@@ -16,14 +16,14 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        SecurityScheme bearerScheme = new SecurityScheme()
-                .type(SecurityScheme.Type.HTTP)
-                .scheme("bearer")
-                .bearerFormat("JWT")
-                .description("JWT Authentication with Bearer token");
+        SecurityScheme cookieScheme = new SecurityScheme()
+                .type(SecurityScheme.Type.APIKEY)
+                .in(SecurityScheme.In.COOKIE)
+                .name("springBootEcom")
+                .description("JWT stored in the HTTP-only authentication cookie");
 
-        SecurityRequirement bearerRequirement = new SecurityRequirement()
-                .addList("Bearer Authentication");
+        SecurityRequirement cookieRequirement = new SecurityRequirement()
+                .addList("Cookie Authentication");
 
         return new OpenAPI()
                 .info(new Info()
@@ -42,7 +42,7 @@ public class SwaggerConfig {
                         .url("https://github.com/Derek376/react-ecom")
                 )
                 .components(new Components()
-                        .addSecuritySchemes("Bearer Authentication", bearerScheme))
-                .addSecurityItem(bearerRequirement);
+                        .addSecuritySchemes("Cookie Authentication", cookieScheme))
+                .addSecurityItem(cookieRequirement);
     }
 }

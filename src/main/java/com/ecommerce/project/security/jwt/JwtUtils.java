@@ -20,6 +20,7 @@ import org.springframework.web.util.WebUtils;
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
+import java.time.Duration;
 
 @Component
 public class JwtUtils {
@@ -69,7 +70,7 @@ public class JwtUtils {
     public ResponseCookie buildJwtCookie(String jwt) {
         return ResponseCookie.from(jwtCookie, jwt)
                 .path("/api")
-                .maxAge(24 * 60 * 60)
+                .maxAge(Duration.ofMillis(jwtExpirationMs))
                 .httpOnly(true)
                 .secure(cookieSecure)
                 .sameSite(cookieSameSite)
@@ -115,7 +116,6 @@ public class JwtUtils {
     // Validate JWT Token
     public boolean validateJwtToken(String authToken) {
         try {
-            System.out.println("Validate");
             Jwts.parser().verifyWith((SecretKey) key()).build().parseSignedClaims(authToken);
             return true;
         } catch (MalformedJwtException e) {

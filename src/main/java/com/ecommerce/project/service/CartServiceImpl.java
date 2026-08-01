@@ -19,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 @Service
@@ -44,6 +47,9 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartDTO addProductToCart(Long productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new APIexception("Quantity must be greater than zero");
+        }
         // Find existing cart or create one
         Cart cart = createCart();
 
@@ -84,6 +90,7 @@ public class CartServiceImpl implements CartService {
         cart.getCartItems().add(newCartItem);
 
         cart.setTotalPrice(cart.getTotalPrice() + (product.getSpecialPrice() * quantity));
+        rotateCheckoutToken(cart);
         cartRepository.save(cart);
 
         // Return updated cart
@@ -148,6 +155,9 @@ public class CartServiceImpl implements CartService {
     public CartDTO updateProductQuantityInCart(Long productId, Integer quantity) {
         String emailId = authUtil.loggedInEmail();
         Cart userCart = cartRepository.findCartByEmail(emailId);
+        if (userCart == null) {
+            throw new ResourceNotFoundException("Cart", "email", emailId);
+        }
         Long cartId = userCart.getCartId();
 
         Cart cart = cartRepository.findById(cartId)
@@ -183,6 +193,7 @@ public class CartServiceImpl implements CartService {
             cartItem.setQuantity(newQuantity);
             cartItem.setDiscount(product.getDiscount());
             cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
+            rotateCheckoutToken(cart);
             cartRepository.save(cart);
             cartItemRepository.save(cartItem);
         }
@@ -210,8 +221,20 @@ public class CartServiceImpl implements CartService {
             throw new ResourceNotFoundException("Product", "productId", productId);
         }
         cart.setTotalPrice(cart.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity()));
+        rotateCheckoutToken(cart);
         cartItemRepository.deleteCartItemByProductIdAndCartId(productId, cartId);
         return "Product " + cartItem.getProduct().getProductName() + " has been removed from the cart";
+    }
+
+    @Transactional
+    @Override
+    public String deleteProductFromCurrentUserCart(Long productId) {
+        String email = authUtil.loggedInEmail();
+        Cart cart = cartRepository.findCartByEmail(email);
+        if (cart == null) {
+            throw new ResourceNotFoundException("Cart", "email", email);
+        }
+        return deleteProductFromCart(cart.getCartId(), productId);
     }
 
     @Override
@@ -233,6 +256,7 @@ public class CartServiceImpl implements CartService {
         cartItem.setProductPrice(product.getSpecialPrice());
 
         cart.setTotalPrice(cartPrice + (cartItem.getProductPrice() * cartItem.getQuantity()));
+        rotateCheckoutToken(cart);
 
         cartItemRepository.save(cartItem);
     }
@@ -240,6 +264,9 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public String createOrUpdateCartWithItems(List<CartItemDTO> cartItems) {
+        if (cartItems == null) {
+            throw new APIexception("Cart items are required");
+        }
         String emailId = authUtil.loggedInEmail();
 
         Cart existingCart = cartRepository.findCartByEmail(emailId);
@@ -247,19 +274,33 @@ public class CartServiceImpl implements CartService {
             existingCart = new Cart();
             existingCart.setTotalPrice(0.00);
             existingCart.setUser(authUtil.loggedInUser());
+            rotateCheckoutToken(existingCart);
             existingCart = cartRepository.save(existingCart);
         } else {
             cartItemRepository.deleteAllByCartId(existingCart.getCartId());
         }
 
         double totalPrice = 0.00;
+        Set<Long> productIds = new HashSet<>();
 
         for (CartItemDTO cartItemDTO : cartItems) {
             Long productId = cartItemDTO.getProductId();
             Integer quantity = cartItemDTO.getQuantity();
 
+            if (productId == null || quantity == null || quantity <= 0) {
+                throw new APIexception("Every cart item needs a product and a quantity greater than zero");
+            }
+            if (!productIds.add(productId)) {
+                throw new APIexception("A product can appear only once in the cart");
+            }
+
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+            if (quantity > product.getQuantity()) {
+                throw new APIexception("Requested quantity for " + product.getProductName()
+                        + " exceeds available stock");
+            }
 
             //product.setQuantity(product.getQuantity() - quantity);
             totalPrice += product.getSpecialPrice() * quantity;
@@ -274,6 +315,7 @@ public class CartServiceImpl implements CartService {
         }
 
         existingCart.setTotalPrice(totalPrice);
+        rotateCheckoutToken(existingCart);
         cartRepository.save(existingCart);
 
         return "Cart created/updated successfully with " + cartItems.size() + " items.";
@@ -288,7 +330,12 @@ public class CartServiceImpl implements CartService {
         Cart cart = new Cart();
         cart.setTotalPrice(0.00);
         cart.setUser(authUtil.loggedInUser());
+        rotateCheckoutToken(cart);
         Cart newCart = cartRepository.save(cart);
         return newCart;
+    }
+
+    private void rotateCheckoutToken(Cart cart) {
+        cart.setCheckoutToken(UUID.randomUUID().toString());
     }
 }

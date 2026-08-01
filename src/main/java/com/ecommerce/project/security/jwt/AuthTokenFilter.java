@@ -64,13 +64,13 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     private String parseJWT(HttpServletRequest request) {
         String jwtFromCookies=jwtUtils.getJWTFromCookies(request);
         if(jwtFromCookies!=null){
-            logger.debug("JWT found in cookies: {}",jwtFromCookies);
+            logger.debug("JWT found in authentication cookie");
             return jwtFromCookies;
         }
 
         String jwtFromHeader=jwtUtils.getJWTFromHeader(request);
         if(jwtFromHeader!=null) {
-            logger.debug("JWT found in header: {}", jwtFromHeader);
+            logger.debug("JWT found in Authorization header");
             return jwtFromHeader;
         }
         return null;

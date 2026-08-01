@@ -49,20 +49,20 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public AddressDTO getAddressById(Long addressId) {
-        Address address=addressRepository.findById(addressId).
-                orElseThrow(()->new ResourceNotFoundException("Address","id",addressId));
+        Address address = getOwnedAddress(addressId);
         return modelMapper.map(address, AddressDTO.class);
     }
 
     @Override
     public List<AddressDTO> getLoggedInUserAddresses(User user) {
-        return user.getAddresses().stream().map(address -> modelMapper.map(address,AddressDTO.class)).toList();
+        return addressRepository.findAllByUserUserId(user.getUserId()).stream()
+                .map(address -> modelMapper.map(address,AddressDTO.class))
+                .toList();
     }
 
     @Override
     public AddressDTO updateAddressById(Long addressId, AddressDTO addressDTO) {
-        Address addressFromDatabase = addressRepository.findById(addressId)
-                .orElseThrow(()->new ResourceNotFoundException("Address","id",addressId));
+        Address addressFromDatabase = getOwnedAddress(addressId);
 
         addressFromDatabase.setCity(addressDTO.getCity());
         addressFromDatabase.setCountry(addressDTO.getCountry());
@@ -83,8 +83,7 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public String deleteAddressById(Long addressId) {
-        Address addressFromDatabase=addressRepository.findById(addressId)
-                .orElseThrow(()->new ResourceNotFoundException("Address","id",addressId));
+        Address addressFromDatabase = getOwnedAddress(addressId);
 
         User user=addressFromDatabase.getUser();
         user.getAddresses().removeIf(address1 -> address1.getAddressId().equals(addressId));
@@ -92,5 +91,10 @@ public class AddressServiceImpl implements AddressService {
 
         addressRepository.delete(addressFromDatabase);
         return "Address successfully deleted with address id: "+addressId;
+    }
+
+    private Address getOwnedAddress(Long addressId) {
+        return addressRepository.findByAddressIdAndUserUserId(addressId, authUtil.loggedInUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
     }
 }

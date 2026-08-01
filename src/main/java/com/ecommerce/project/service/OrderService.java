@@ -8,11 +8,13 @@ import java.util.List;
 
 public interface OrderService {
     @Transactional
-    OrderDTO placeOrder(String email, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage);
+    OrderDTO placeStripeOrder(Long addressId, String paymentIntentId);
 
     OrderResponse getAllOrders(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
     OrderDTO updateOrder(Long orderId, String status);
+
+    OrderDTO updateSellerOrder(Long orderId, String status);
 
     OrderResponse getAllSellerOrders(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 

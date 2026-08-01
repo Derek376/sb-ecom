@@ -1,6 +1,7 @@
 package com.ecommerce.project.service;
 
 import com.ecommerce.project.payload.AuthenticationResult;
+import com.ecommerce.project.payload.SellerDTO;
 import com.ecommerce.project.payload.UserResponse;
 import com.ecommerce.project.security.request.LoginRequest;
 import com.ecommerce.project.security.request.SignupRequest;
@@ -16,6 +17,8 @@ public interface AuthService {
     AuthenticationResult login(LoginRequest loginRequest);
 
     ResponseEntity<MessageResponse> register(@Valid SignupRequest signupRequest);
+
+    SellerDTO registerSeller(@Valid SignupRequest signupRequest);
 
     UserInfoResponse getCurrentUserDetails(Authentication authentication);
 

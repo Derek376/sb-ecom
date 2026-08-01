@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
@@ -67,5 +68,31 @@ class AuthServiceImplTest {
         assertThat(userCaptor.getValue().getRoles()).containsExactly(userRole);
         verify(roleRepository, never()).findByRoleName(AppRole.ROLE_ADMIN);
         verify(roleRepository, never()).findByRoleName(AppRole.ROLE_SELLER);
+    }
+
+    @Test
+    void adminSellerRegistrationAssignsUserAndSellerRolesWithoutAcceptingClientRoles() {
+        SignupRequest request = new SignupRequest();
+        request.setUsername("seller");
+        request.setEmail("seller@example.com");
+        request.setPassword("password123");
+
+        Role userRole = new Role(AppRole.ROLE_USER);
+        Role sellerRole = new Role(AppRole.ROLE_SELLER);
+        when(encoder.encode("password123")).thenReturn("encoded-password");
+        when(roleRepository.findByRoleName(AppRole.ROLE_USER)).thenReturn(Optional.of(userRole));
+        when(roleRepository.findByRoleName(AppRole.ROLE_SELLER)).thenReturn(Optional.of(sellerRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setUserId(42L);
+            return saved;
+        });
+
+        authService.registerSeller(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getRoles()).containsExactlyInAnyOrder(userRole, sellerRole);
+        verify(roleRepository, never()).findByRoleName(AppRole.ROLE_ADMIN);
     }
 }

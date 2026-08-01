@@ -22,7 +22,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 
 - **Java 21** + **Spring Boot 4** REST API with layered architecture (controller → service → repository)
 - **PostgreSQL** (Neon in production) with JPA / Hibernate
-- **Spring Security + JWT** (HTTP-only cookie + `Authorization: Bearer` for cross-origin clients)
+- **Spring Security + JWT** in an HTTP-only cookie, with SPA CSRF protection
 - **RBAC**: `USER`, `SELLER`, `ADMIN`
 - **Stripe** PaymentIntent integration (test mode)
 - **OpenAPI / Swagger** for interactive docs
@@ -34,7 +34,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 
 | Area | What it does |
 |------|----------------|
-| Auth | Sign up / sign in / sign out; JWT in cookie and response body |
+| Auth | Sign up / sign in / sign out; JWT kept out of JavaScript in an HTTP-only cookie |
 | Catalog | Paginated products & categories, keyword search, filters |
 | Cart | Add / update / remove items; totals tracked server-side |
 | Addresses | Per-user shipping addresses (`GET /api/users/addresses`) |
@@ -64,7 +64,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 
 ```
 Client (react-ecom)
-        │  HTTPS + credentials / Bearer JWT
+        │  HTTPS + JWT cookie + CSRF header
         ▼
  Spring Security filter chain (JWT cookie or Authorization header)
         │
@@ -141,10 +141,19 @@ All routes are under `/api`.
 | Public catalog | Public | `GET /public/products`, `GET /public/categories` |
 | Cart | JWT | `GET /carts/users/cart`, `POST /carts/products/{id}/quantity/{qty}` |
 | Addresses | JWT | `GET /users/addresses`, `POST /addresses` |
-| Orders | JWT | `POST /order/users/payments/{method}`, `GET /users/orders` |
+| Orders | JWT | `POST /orders`, `GET /users/orders` |
 | Stripe | JWT | `POST /order/stripe-client-secret` |
 | Seller | SELLER/ADMIN | `POST /seller/categories/{id}/product`, product CRUD |
-| Admin | ADMIN | categories, orders, analytics, sellers |
+| Admin | ADMIN | categories, orders, analytics, `GET/POST /admin/sellers` |
+
+### Security model
+
+- The browser authenticates with a `Secure`, HTTP-only JWT cookie; the token is not returned in JSON or stored in `localStorage`.
+- The SPA obtains a CSRF token from `GET /api/auth/csrf` and sends it in the returned header for every state-changing request.
+- URL rules provide role checks, while service/repository queries scope addresses, products, carts, and seller orders to the authenticated owner.
+- Public signup always creates `ROLE_USER`. Only an authenticated admin can create a seller through `POST /api/admin/sellers`.
+- Stripe amounts are calculated from the server-side cart. Order creation retrieves the PaymentIntent from Stripe and verifies its status, amount, currency, user, and cart metadata.
+- PaymentIntent IDs are unique in the payments table, making repeat order-confirmation requests idempotent.
 
 ---
 

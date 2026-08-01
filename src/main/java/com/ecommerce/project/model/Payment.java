@@ -24,6 +24,7 @@ public class Payment {
     @Size(min = 4, message = "Payment method must be at least 4 characters long")
     private String paymentMethod;
 
+    @Column(unique = true)
     private String pgPaymentId;
     private String pgStatus;
     private String pgResponseMessage;

@@ -108,20 +108,20 @@ public class ProductController {
     @PutMapping("/seller/products/{productId}")
     public ResponseEntity<ProductDTO> updateProductSeller(@PathVariable Long productId,
                                                     @Valid @RequestBody ProductDTO productDTO){
-        ProductDTO updatedproductDTO=productService.updateProduct(productId,productDTO);
+        ProductDTO updatedproductDTO=productService.updateSellerProduct(productId,productDTO);
         return new ResponseEntity<>(updatedproductDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/seller/products/{productId}")
     public ResponseEntity<ProductDTO> deleteProductSeller(@PathVariable Long productId){
-        ProductDTO deletedproductDTO=productService.deleteProduct(productId);
+        ProductDTO deletedproductDTO=productService.deleteSellerProduct(productId);
         return new ResponseEntity<>(deletedproductDTO,HttpStatus.OK);
     }
 
     @PutMapping("/seller/products/{productId}/image")
     public ResponseEntity<ProductDTO> UpdateProductImageSeller(@PathVariable Long productId,
                                                          @RequestParam("image")MultipartFile image) throws IOException {
-        ProductDTO updatedproductDTO=productService.UpdateProductImage(productId,image);
+        ProductDTO updatedproductDTO=productService.updateSellerProductImage(productId,image);
         return new ResponseEntity<>(updatedproductDTO,HttpStatus.OK);
     }
 }

@@ -255,13 +255,25 @@ public class ProductServiceImpl implements ProductService {
         Product productFromDb = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
+        return updateProduct(productFromDb, productDTO);
+    }
+
+    @Override
+    public ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO) {
+        return updateProduct(getOwnedProduct(productId), productDTO);
+    }
+
+    private ProductDTO updateProduct(Product productFromDb, ProductDTO productDTO) {
+        Long productId = productFromDb.getProductId();
         Product product = modelMapper.map(productDTO, Product.class);
         productFromDb.setProductName(product.getProductName());
         productFromDb.setDescription(product.getDescription());
         productFromDb.setQuantity(product.getQuantity());
         productFromDb.setDiscount(product.getDiscount());
         productFromDb.setPrice(product.getPrice());
-        productFromDb.setSpecialPrice(product.getSpecialPrice());
+        double specialPrice = product.getPrice()
+                - product.getPrice() * product.getDiscount() * 0.01;
+        productFromDb.setSpecialPrice(specialPrice);
 
         Product savedProduct = productRepository.save(productFromDb);
 
@@ -286,6 +298,17 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
+        return deleteProduct(product);
+    }
+
+    @Override
+    public ProductDTO deleteSellerProduct(Long productId) {
+        return deleteProduct(getOwnedProduct(productId));
+    }
+
+    private ProductDTO deleteProduct(Product product) {
+        Long productId = product.getProductId();
+
         List<Cart> carts = cartRepository.findCartsByProductId(productId);
         carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
 
@@ -298,6 +321,16 @@ public class ProductServiceImpl implements ProductService {
         Product productFromDb = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
+        return updateProductImage(productFromDb, image);
+    }
+
+    @Override
+    public ProductDTO updateSellerProductImage(Long productId, MultipartFile image) throws IOException {
+        return updateProductImage(getOwnedProduct(productId), image);
+    }
+
+    private ProductDTO updateProductImage(Product productFromDb, MultipartFile image) throws IOException {
+
         String fileName = fileService.uploadImage(path, image);
 
         productFromDb.setImage(fileName);
@@ -305,5 +338,10 @@ public class ProductServiceImpl implements ProductService {
         Product updatedProduct = productRepository.save(productFromDb);
 
         return modelMapper.map(updatedProduct, ProductDTO.class);
+    }
+
+    private Product getOwnedProduct(Long productId) {
+        return productRepository.findByProductIdAndUserUserId(productId, authUtil.loggedInUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
     }
 }

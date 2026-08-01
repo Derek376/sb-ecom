@@ -3,8 +3,9 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.Role;
 import com.ecommerce.project.model.User;
+import com.ecommerce.project.exceptions.APIexception;
 import com.ecommerce.project.payload.AuthenticationResult;
-import com.ecommerce.project.payload.UserDTO;
+import com.ecommerce.project.payload.SellerDTO;
 import com.ecommerce.project.payload.UserResponse;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
@@ -15,7 +16,6 @@ import com.ecommerce.project.security.response.MessageResponse;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
 import jakarta.transaction.Transactional;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,9 +50,6 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     PasswordEncoder encoder;
 
-    @Autowired
-    ModelMapper modelMapper;
-
     @Override
     public AuthenticationResult login(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -64,8 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String jwtToken = jwtUtils.generateTokenFromUsername(userDetails.getUsername());
-        ResponseCookie jwtCookie = jwtUtils.buildJwtCookie(jwtToken);
+        ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
@@ -74,8 +70,7 @@ public class AuthServiceImpl implements AuthService {
                 userDetails.getId(),
                 userDetails.getUsername(),
                 roles,
-                userDetails.getEmail(),
-                jwtToken
+                userDetails.getEmail()
         );
 
         return new AuthenticationResult(response, jwtCookie);
@@ -107,6 +102,31 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public SellerDTO registerSeller(SignupRequest signupRequest) {
+        if (userRepository.existsByUserName(signupRequest.getUsername())) {
+            throw new APIexception("Username is already taken");
+        }
+        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+            throw new APIexception("Email is already taken");
+        }
+
+        Role userRole = roleRepository.findByRoleName(AppRole.ROLE_USER)
+                .orElseThrow(() -> new IllegalStateException("USER role is not configured"));
+        Role sellerRole = roleRepository.findByRoleName(AppRole.ROLE_SELLER)
+                .orElseThrow(() -> new IllegalStateException("SELLER role is not configured"));
+
+        User seller = new User(
+                signupRequest.getUsername(),
+                signupRequest.getEmail(),
+                encoder.encode(signupRequest.getPassword())
+        );
+        seller.setRoles(Set.of(userRole, sellerRole));
+        User savedSeller = userRepository.save(seller);
+
+        return toSellerDTO(savedSeller);
+    }
+
+    @Override
     public UserInfoResponse getCurrentUserDetails(Authentication authentication) {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
@@ -115,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
                 .collect(Collectors.toList());
 
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
-                userDetails.getUsername(), roles);
+                userDetails.getUsername(), roles, userDetails.getEmail());
         return response;
     }
 
@@ -128,8 +148,8 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse getAllSellers(Pageable pageable) {
         Page<User> allUsers = userRepository.findByRoleName(AppRole.ROLE_SELLER, pageable);
 
-        List<UserDTO> sellers = allUsers.getContent().stream()
-                .map(user -> modelMapper.map(user, UserDTO.class))
+        List<SellerDTO> sellers = allUsers.getContent().stream()
+                .map(this::toSellerDTO)
                 .toList();
         UserResponse userResponse = new UserResponse();
         userResponse.setContent(sellers);
@@ -139,5 +159,9 @@ public class AuthServiceImpl implements AuthService {
         userResponse.setTotalPages(allUsers.getTotalPages());
         userResponse.setLastPage(allUsers.isLast());
         return userResponse;
+    }
+
+    private SellerDTO toSellerDTO(User user) {
+        return new SellerDTO(user.getUserId(), user.getUserName(), user.getEmail());
     }
 }

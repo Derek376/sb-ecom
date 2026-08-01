@@ -4,6 +4,8 @@ import com.ecommerce.project.payload.APIResponse;
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.stripe.exception.StripeException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,5 +40,17 @@ public class MyGlobalExceptionHandler {
         String message=e.getMessage();
         APIResponse apiResponse=new APIResponse(message,false);
         return new ResponseEntity<>(apiResponse,HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(StripeException.class)
+    public ResponseEntity<APIResponse> stripeException(StripeException exception) {
+        APIResponse response = new APIResponse("Payment provider request failed", false);
+        return new ResponseEntity<>(response, HttpStatus.BAD_GATEWAY);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<APIResponse> dataIntegrityViolation(DataIntegrityViolationException exception) {
+        APIResponse response = new APIResponse("The request conflicts with existing data", false);
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 }

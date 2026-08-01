@@ -8,6 +8,7 @@ import com.ecommerce.project.service.StripeService;
 import com.ecommerce.project.util.AuthUtil;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,26 +30,19 @@ public class OrderController {
     @Autowired
     private StripeService stripeService;
 
-    @PostMapping("/order/users/payments/{paymentMethod}")
-    public ResponseEntity<OrderDTO> orderProducts(@PathVariable String paymentMethod,
-                                                  @RequestBody OrderRequestDTO orderRequestDTO) {
-        String email = authUtil.loggedInEmail();
-        OrderDTO order = orderService.placeOrder(
-                email,
+    @PostMapping("/orders")
+    public ResponseEntity<OrderDTO> orderProducts(@Valid @RequestBody OrderRequestDTO orderRequestDTO) {
+        OrderDTO order = orderService.placeStripeOrder(
                 orderRequestDTO.getAddressId(),
-                paymentMethod,
-                orderRequestDTO.getPgName(),
-                orderRequestDTO.getPgPaymentId(),
-                orderRequestDTO.getPgStatus(),
-                orderRequestDTO.getPgResponseMessage()
+                orderRequestDTO.getPaymentIntentId()
         );
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
 
     @PostMapping("/order/stripe-client-secret")
-    public ResponseEntity<String> createStripeClientSecret(@RequestBody StripePaymentDTO stripePaymentDTO) throws StripeException {
-        System.out.println("StripePaymentDTO: " + stripePaymentDTO);
-        PaymentIntent paymentIntent = stripeService.paymentIntent(stripePaymentDTO);
+    public ResponseEntity<String> createStripeClientSecret(
+            @Valid @RequestBody CreatePaymentIntentRequest request) throws StripeException {
+        PaymentIntent paymentIntent = stripeService.createPaymentIntent(request.getAddressId());
         return new ResponseEntity<>(paymentIntent.getClientSecret(), HttpStatus.CREATED);
     }
 
@@ -83,15 +77,15 @@ public class OrderController {
 
     @PutMapping("/admin/orders/{orderId}/status")
     public ResponseEntity<OrderDTO> updateOrderStatus(@PathVariable Long orderId,
-                                                      @RequestBody OrderStatusUpdateDTO orderStatusUpdateDTO) {
+                                                      @Valid @RequestBody OrderStatusUpdateDTO orderStatusUpdateDTO) {
         OrderDTO updatedOrder = orderService.updateOrder(orderId, orderStatusUpdateDTO.getStatus());
         return new ResponseEntity<>(updatedOrder, HttpStatus.OK);
     }
 
     @PutMapping("/seller/orders/{orderId}/status")
     public ResponseEntity<OrderDTO> updateOrderStatusSeller(@PathVariable Long orderId,
-                                                      @RequestBody OrderStatusUpdateDTO orderStatusUpdateDTO) {
-        OrderDTO updatedOrder = orderService.updateOrder(orderId, orderStatusUpdateDTO.getStatus());
+                                                      @Valid @RequestBody OrderStatusUpdateDTO orderStatusUpdateDTO) {
+        OrderDTO updatedOrder = orderService.updateSellerOrder(orderId, orderStatusUpdateDTO.getStatus());
         return new ResponseEntity<>(updatedOrder, HttpStatus.OK);
     }
 }
