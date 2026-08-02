@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.stripe.exception.StripeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class MyGlobalExceptionHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyGlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String,String>> myMethodArgumentNotValidException(MethodArgumentNotValidException e){
@@ -44,6 +47,13 @@ public class MyGlobalExceptionHandler {
 
     @ExceptionHandler(StripeException.class)
     public ResponseEntity<APIResponse> stripeException(StripeException exception) {
+        LOGGER.error(
+                "Stripe request failed: type={}, code={}, requestId={}, status={}",
+                exception.getClass().getSimpleName(),
+                exception.getCode(),
+                exception.getRequestId(),
+                exception.getStatusCode()
+        );
         APIResponse response = new APIResponse("Payment provider request failed", false);
         return new ResponseEntity<>(response, HttpStatus.BAD_GATEWAY);
     }

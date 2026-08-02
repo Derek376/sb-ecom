@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+target
+src/main/resources/application-local.properties
