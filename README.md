@@ -55,6 +55,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 | Security | Spring Security, JJWT, BCrypt |
 | Docs | SpringDoc OpenAPI 3 |
 | Payments | Stripe Java SDK |
+| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, H2 |
 | Build | Maven Wrapper |
 | Deploy | Docker → Render; DB on Neon |
 
@@ -128,6 +129,28 @@ VITE_BACK_END_URL=http://localhost:8080
 VITE_FRONTEND_URL=http://localhost:5173
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
+
+---
+
+## Tests
+
+Run the complete backend suite with the Maven Wrapper:
+
+```bash
+./mvnw test
+```
+
+The suite combines:
+
+- fast Mockito unit tests for authentication, ownership, Stripe verification,
+  stock handling, and order finalization;
+- MockMvc integration tests for endpoint authorization, role boundaries, CSRF,
+  request validation, and admin-controlled seller creation;
+- a Spring context test using an isolated in-memory H2 database.
+
+Tests do not call Stripe or require a local PostgreSQL server. External payment
+responses are mocked, while persistence-backed security tests use H2 and roll
+back their data after each test.
 
 ---
 
