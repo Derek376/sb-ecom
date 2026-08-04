@@ -1,5 +1,7 @@
 # sb-ecom
 
+[![Backend CI](https://github.com/Derek376/sb-ecom/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Derek376/sb-ecom/actions/workflows/backend-ci.yml)
+
 REST API for a full-stack e-commerce platform — catalog, cart, checkout, JWT auth, and role-based admin/seller dashboards.
 
 Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/react-ecom)**
@@ -151,6 +153,22 @@ The suite combines:
 Tests do not call Stripe or require a local PostgreSQL server. External payment
 responses are mocked, while persistence-backed security tests use H2 and roll
 back their data after each test.
+
+---
+
+## Continuous integration
+
+GitHub Actions runs the complete Maven verification lifecycle on every pull
+request targeting `main`, every push to `main`, and on manual request from the
+Actions tab:
+
+```bash
+./mvnw --batch-mode --no-transfer-progress verify
+```
+
+This compiles the application and tests, runs all backend tests, and packages the
+executable Spring Boot JAR. The workflow uses Java 21, caches Maven dependencies,
+and requires no database or Stripe repository secrets.
 
 ---
 
