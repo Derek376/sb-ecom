@@ -12,11 +12,11 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 
 | | URL |
 |---|-----|
-| **Storefront** | [react-ecom (Vercel)](https://github.com/Derek376/react-ecom#live-demo) — see frontend README |
-| **API (Swagger)** | https://sb-ecom-s41k.onrender.com/swagger-ui/index.html |
-| **Sample public products** | https://sb-ecom-s41k.onrender.com/api/public/products?pageNumber=0&pageSize=10&sortBy=price&sortOrder=asc |
+| **Storefront** | https://react-ecom-zeta.vercel.app |
+| **API (Swagger)** | https://p01--sb-ecom--ccxd59t2vl2x.code.run/swagger-ui/index.html |
+| **Sample public products** | https://p01--sb-ecom--ccxd59t2vl2x.code.run/api/public/products?pageNumber=0&pageSize=10&sortBy=price&sortOrder=asc |
 
-> **Note:** The free Render instance sleeps when idle. The first request after inactivity can take **30–60 seconds**.
+> The API runs from a Docker image on Northflank and uses Neon for the production PostgreSQL database.
 
 ---
 
@@ -28,7 +28,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 - **RBAC**: `USER`, `SELLER`, `ADMIN`
 - **Stripe** PaymentIntent integration (test mode)
 - **OpenAPI / Swagger** for interactive docs
-- Deployed with **Docker** on **Render** + managed Postgres on **Neon**
+- Deployed with **Docker** on **Northflank** + managed Postgres on **Neon**
 
 ---
 
@@ -59,7 +59,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 | Payments | Stripe Java SDK |
 | Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, H2 |
 | Build | Maven Wrapper |
-| Deploy | Docker → Render; DB on Neon |
+| Deploy | Docker → Northflank; DB on Neon |
 
 ---
 
@@ -198,9 +198,13 @@ All routes are under `/api`.
 
 ---
 
-## Production configuration (Render)
+## Production deployment (Northflank)
 
-Typical environment variables:
+The production API is deployed from the Docker image to a Northflank deployment service. The container listens on port `8080`, which must be exposed as a public HTTP port under **Ports & DNS**.
+
+### Runtime environment variables
+
+Configure these variables in the Northflank service:
 
 | Variable | Purpose |
 |----------|---------|
@@ -208,20 +212,30 @@ Typical environment variables:
 | `SPRING_DATASOURCE_USERNAME` / `PASSWORD` | Neon credentials |
 | `SPRING_APP_JWTSECRET` | Base64 JWT signing key |
 | `STRIPE_SECRET_KEY` | Stripe secret (`sk_test_...`) |
-| `FRONTEND_URL` | Exact Vercel origin (no trailing slash) |
-| `IMAGE_BASE_URL` | `https://<this-service>.onrender.com/images/` |
-| `SERVER_PORT` | `$PORT` |
+| `FRONTEND_URL` | Exact Vercel origin, for example `https://react-ecom-zeta.vercel.app` (no trailing slash) |
+| `IMAGE_BASE_URL` | `https://p01--sb-ecom--ccxd59t2vl2x.code.run/images/` |
 | `APP_JWT_COOKIE_SECURE` | `true` |
 | `APP_JWT_COOKIE_SAME_SITE` | `None` |
 
-Docker image (example):
+Do not add `/api` to `IMAGE_BASE_URL`. Product image files are served from `/images/**`, while REST endpoints are served from `/api/**`.
+
+### Build and publish the Docker image
 
 ```bash
 docker build --platform linux/amd64 -t <dockerhub-user>/sb-ecom:latest .
 docker push <dockerhub-user>/sb-ecom:latest
 ```
 
-Then redeploy the existing Render Web Service (no need to recreate the service each time).
+### Configure the Northflank service
+
+1. Create a deployment service from the Docker Hub image `<dockerhub-user>/sb-ecom:latest`.
+2. Add the runtime environment variables listed above.
+3. Under **Ports & DNS**, expose container port `8080` using the HTTP protocol and enable the public endpoint.
+4. Deploy the service, then verify the Swagger and sample-products URLs from the **Live demo** section.
+
+For later backend releases, build and push the updated image with the same tag, then redeploy the existing Northflank service. The service does not need to be recreated.
+
+> Uploaded product images currently use the container filesystem. Container storage may be replaced during a redeploy, so a production version should store uploads in persistent object storage such as Amazon S3 or Cloudinary.
 
 ---
 
