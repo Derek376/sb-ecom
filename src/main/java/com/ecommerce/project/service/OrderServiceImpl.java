@@ -20,6 +20,7 @@ import com.ecommerce.project.repositories.OrderRepository;
 import com.ecommerce.project.repositories.PaymentRepository;
 import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.util.AuthUtil;
+import com.ecommerce.project.util.SortUtil;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import jakarta.transaction.Transactional;
@@ -27,7 +28,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,9 +35,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Set;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "orderId", "totalAmount", "orderDate", "orderStatus"
+    );
     private static final Set<String> ALLOWED_STATUSES = Set.of(
             "Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Accepted"
     );
@@ -215,10 +220,11 @@ public class OrderServiceImpl implements OrderService {
 
     private Pageable createPage(Integer pageNumber, Integer pageSize,
                                 String sortBy, String sortOrder) {
-        Sort sort = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        return PageRequest.of(pageNumber, pageSize, sort);
+        return PageRequest.of(
+                pageNumber,
+                pageSize,
+                SortUtil.build(sortBy, sortOrder, ALLOWED_SORT_FIELDS, "orderId")
+        );
     }
 
     private OrderResponse toOrderResponse(Page<Order> page, Long sellerId) {

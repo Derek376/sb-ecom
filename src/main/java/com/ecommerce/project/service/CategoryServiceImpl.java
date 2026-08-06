@@ -6,18 +6,23 @@ import com.ecommerce.project.model.Category;
 import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
+import com.ecommerce.project.util.SortUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class CategoryServiceImpl implements CategoryService{
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "categoryId", "categoryName"
+    );
+
     @Autowired
     private CategoryRepository categoryRepository;
 
@@ -27,11 +32,11 @@ public class CategoryServiceImpl implements CategoryService{
     @Override
     public CategoryResponse getAllCategories(Integer pageNumber,Integer pageSize,
                                              String sortBy,String sortOrder) {
-        Sort sortByAndOrder=sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageDetails= PageRequest.of(pageNumber,pageSize,sortByAndOrder);
+        Pageable pageDetails = PageRequest.of(
+                pageNumber,
+                pageSize,
+                SortUtil.build(sortBy, sortOrder, ALLOWED_SORT_FIELDS, "categoryId")
+        );
         Page<Category> categoryPage=categoryRepository.findAll(pageDetails);
 
         List<Category> categories=categoryPage.getContent();

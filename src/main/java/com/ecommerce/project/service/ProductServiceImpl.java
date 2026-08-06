@@ -14,22 +14,27 @@ import com.ecommerce.project.repositories.CategoryRepository;
 import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.util.AuthUtil;
 import com.ecommerce.project.util.ImageUrlUtil;
+import com.ecommerce.project.util.SortUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ProductServiceImpl implements ProductService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "productId", "productName", "price", "quantity", "specialPrice"
+    );
 
     @Autowired
     private CartRepository cartRepository;
@@ -97,10 +102,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String keyword, String category) {
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Pageable pageDetails = createPage(pageNumber, pageSize, sortBy, sortOrder);
 
         Specification<Product> spec = null;
         if (keyword != null && !keyword.isEmpty()) {
@@ -143,10 +145,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getAllProductsForAdmin(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Pageable pageDetails = createPage(pageNumber, pageSize, sortBy, sortOrder);
 
         Page<Product> productPage = productRepository.findAll(pageDetails);
         List<Product> products = productPage.getContent();
@@ -172,10 +171,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getAllProductsForSeller(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Pageable pageDetails = createPage(pageNumber, pageSize, sortBy, sortOrder);
 
         User user = authUtil.loggedInUser();
         Page<Product> productPage = productRepository.findByUser(user, pageDetails);
@@ -205,10 +201,7 @@ public class ProductServiceImpl implements ProductService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "categoryId", categoryId));
 
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Pageable pageDetails = createPage(pageNumber, pageSize, sortBy, sortOrder);
         Page<Product> productPage = productRepository.findByCategoryOrderByPriceAsc(category, pageDetails);
         List<Product> products = productPage.getContent();
 
@@ -232,10 +225,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getProductsByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Pageable pageDetails = createPage(pageNumber, pageSize, sortBy, sortOrder);
         Page<Product> productPage = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%', pageDetails);
         List<Product> products = productPage.getContent();
 
@@ -357,5 +347,14 @@ public class ProductServiceImpl implements ProductService {
     private Product getOwnedProduct(Long productId) {
         return productRepository.findByProductIdAndUserUserId(productId, authUtil.loggedInUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+    }
+
+    private Pageable createPage(Integer pageNumber, Integer pageSize,
+                                String sortBy, String sortOrder) {
+        return PageRequest.of(
+                pageNumber,
+                pageSize,
+                SortUtil.build(sortBy, sortOrder, ALLOWED_SORT_FIELDS, "productId")
+        );
     }
 }
