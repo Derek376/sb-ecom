@@ -46,8 +46,11 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ModelMapper modelMapper;
 
+//    @Autowired
+//    private FileService fileService;
+
     @Autowired
-    private FileService fileService;
+    private final ImageStorageService imageStorageService;
 
     @Autowired
     private ImageUrlUtil imageUrlUtil;
@@ -57,6 +60,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Value("${project.image}")
     private String path;
+
+    public ProductServiceImpl(ImageStorageService imageStorageService) {
+        this.imageStorageService = imageStorageService;
+    }
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -331,9 +338,16 @@ public class ProductServiceImpl implements ProductService {
 
     private ProductDTO updateProductImage(Product productFromDb, MultipartFile image) throws IOException {
 
-        String fileName = fileService.uploadImage(path, image);
+//        String fileName = fileService.uploadImage(path, image);
+//
+//        productFromDb.setImage(fileName);
 
-        productFromDb.setImage(fileName);
+        String imageUrl = imageStorageService.uploadProductImage(
+                productFromDb.getProductId(),
+                image
+        );
+
+        productFromDb.setImage(imageUrl);
 
         Product updatedProduct = productRepository.save(productFromDb);
 
