@@ -2,7 +2,9 @@
 
 [![Backend CI](https://github.com/Derek376/sb-ecom/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Derek376/sb-ecom/actions/workflows/backend-ci.yml)
 
-REST API for a full-stack e-commerce platform — catalog, cart, checkout, JWT auth, and role-based admin/seller dashboards.
+Portfolio-grade REST API for a full-stack e-commerce platform—catalog, cart,
+secure checkout, JWT authentication, media storage, and role-based admin/seller
+operations.
 
 Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/react-ecom)**
 
@@ -26,8 +28,12 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 - **PostgreSQL** (Neon in production) with JPA / Hibernate
 - **Spring Security + JWT** in an HTTP-only cookie, with SPA CSRF protection
 - **RBAC**: `USER`, `SELLER`, `ADMIN`
-- **Stripe** PaymentIntent integration (test mode)
+- Server-authoritative **Stripe PaymentIntent creation and verification** (test mode)
+- Ownership checks for addresses, products, carts, and seller orders
+- Product media stored in **Cloudinary**, with type and size validation
+- Stable, allowlisted server-side sorting for paginated dashboard data
 - **OpenAPI / Swagger** for interactive docs
+- Automated unit/integration tests and GitHub Actions verification
 - Deployed with **Docker** on **Northflank** + managed Postgres on **Neon**
 
 ---
@@ -40,10 +46,10 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 | Catalog | Paginated products & categories, keyword search, filters |
 | Cart | Add / update / remove items; totals tracked server-side |
 | Addresses | Per-user shipping addresses (`GET /api/users/addresses`) |
-| Orders | Place order after payment metadata; user order history (`GET /api/users/orders`) |
-| Seller | Create/update products & images under categories |
+| Orders | Verify Stripe payment, finalize stock/order transaction, and expose user order history |
+| Seller | Manage only owned products and seller-visible orders |
 | Admin | Categories, products, sellers, orders, analytics |
-| Media | Product image upload + static serving under `/images/**` |
+| Media | Validated JPEG/PNG/WebP uploads stored under deterministic Cloudinary public IDs |
 
 ---
 
@@ -57,6 +63,7 @@ Pairs with the React storefront: **[react-ecom](https://github.com/Derek376/reac
 | Security | Spring Security, JJWT, BCrypt |
 | Docs | SpringDoc OpenAPI 3 |
 | Payments | Stripe Java SDK |
+| Media | Cloudinary Java SDK |
 | Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, H2 |
 | Build | Maven Wrapper |
 | Deploy | Docker → Northflank; DB on Neon |
@@ -73,8 +80,9 @@ Client (react-ecom)
         │
         ▼
  Controllers  →  Services  →  JPA Repositories  →  PostgreSQL
-        │
-        └── /images/**  (uploaded product files)
+                       │
+                       ├── Stripe API (payment creation/verification)
+                       └── Cloudinary (durable product media)
 ```
 
 ---
@@ -105,6 +113,11 @@ spring.app.jwtSecret=REPLACE_WITH_BASE64_SECRET
 stripe.secret.key=sk_test_...
 app.jwt.cookie.secure=false
 app.jwt.cookie.same-site=Lax
+cloudinary.cloud-name=YOUR_CLOUD_NAME
+cloudinary.api-key=YOUR_API_KEY
+cloudinary.api-secret=YOUR_API_SECRET
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB
 ```
 
 Generate a JWT secret:
@@ -153,6 +166,10 @@ The suite combines:
 Tests do not call Stripe or require a local PostgreSQL server. External payment
 responses are mocked, while persistence-backed security tests use H2 and roll
 back their data after each test.
+
+The current backend suite contains **40 passing tests** covering authorization,
+ownership, seller creation, Stripe verification, order finalization, stable
+sorting, validation, and application startup.
 
 ---
 
@@ -213,11 +230,16 @@ Configure these variables in the Northflank service:
 | `SPRING_APP_JWTSECRET` | Base64 JWT signing key |
 | `STRIPE_SECRET_KEY` | Stripe secret (`sk_test_...`) |
 | `FRONTEND_URL` | Exact Vercel origin, for example `https://react-ecom-zeta.vercel.app` (no trailing slash) |
-| `IMAGE_BASE_URL` | `https://p01--sb-ecom--ccxd59t2vl2x.code.run/images/` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret; keep it server-side only |
+| `SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE` | `5MB` |
+| `SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE` | `5MB` |
 | `APP_JWT_COOKIE_SECURE` | `true` |
 | `APP_JWT_COOKIE_SAME_SITE` | `None` |
 
-Do not add `/api` to `IMAGE_BASE_URL`. Product image files are served from `/images/**`, while REST endpoints are served from `/api/**`.
+Cloudinary credentials belong only in local ignored configuration or Northflank
+environment variables. Never expose the API secret to the React application.
 
 ### Build and publish the Docker image
 
@@ -233,9 +255,28 @@ docker push <dockerhub-user>/sb-ecom:latest
 3. Under **Ports & DNS**, expose container port `8080` using the HTTP protocol and enable the public endpoint.
 4. Deploy the service, then verify the Swagger and sample-products URLs from the **Live demo** section.
 
-For later backend releases, build and push the updated image with the same tag, then redeploy the existing Northflank service. The service does not need to be recreated.
+For later backend releases, build and push the updated image with the same tag,
+then redeploy the existing Northflank service. The service does not need to be
+recreated. Product media survives container replacement because Cloudinary—not
+the Northflank container filesystem—is the source of truth.
 
-> Uploaded product images currently use the container filesystem. Container storage may be replaced during a redeploy, so a production version should store uploads in persistent object storage such as Amazon S3 or Cloudinary.
+---
+
+## Pagination and sorting
+
+Paginated catalog and dashboard endpoints accept:
+
+| Parameter | Meaning |
+|-----------|---------|
+| `pageNumber` | Zero-based page number |
+| `pageSize` | Number of records per page |
+| `sortBy` | Endpoint-specific allowlisted field |
+| `sortOrder` | `asc` or `desc` |
+
+Sort fields are validated before reaching Spring Data. When sorting by a
+non-ID field, the entity ID is applied as a stable secondary sort, preventing
+records with equal prices, dates, or names from moving unpredictably between
+pages.
 
 ---
 
@@ -243,15 +284,15 @@ For later backend releases, build and push the updated image with the same tag, 
 
 ```
 src/main/java/com/ecommerce/project/
-├── config/        # Constants, Swagger, static resources
+├── config/        # Security-adjacent configuration, Swagger, Cloudinary
 ├── controller/    # REST endpoints
 ├── model/         # JPA entities
 ├── payload/       # DTOs
 ├── repositories/  # Spring Data JPA
 ├── security/      # JWT, filters, CORS, user details
-├── service/       # Business logic (cart, order, Stripe, …)
+├── service/       # Business logic (ownership, cart, order, Stripe, media, …)
 ├── exceptions/    # API exceptions + global handler
-└── util/          # Auth helpers, image URL builder
+└── util/          # Auth helpers and validated stable-sort builder
 ```
 
 ---
