@@ -16,12 +16,14 @@ import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.util.AuthUtil;
 import com.ecommerce.project.util.ImageUrlUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -44,6 +46,7 @@ class OwnershipServiceTest {
     @Mock CartService cartService;
     @Mock StripeService stripeService;
     @Mock FileService fileService;
+    @Mock ImageStorageService imageStorageService;
     @Mock ImageUrlUtil imageUrlUtil;
     @Mock ModelMapper modelMapper;
     @Mock AuthUtil authUtil;
@@ -51,6 +54,12 @@ class OwnershipServiceTest {
     @InjectMocks AddressServiceImpl addressService;
     @InjectMocks ProductServiceImpl productService;
     @InjectMocks OrderServiceImpl orderService;
+
+    @BeforeEach
+    void injectProductServiceFieldDependencies() {
+        ReflectionTestUtils.setField(productService, "authUtil", authUtil);
+        ReflectionTestUtils.setField(productService, "productRepository", productRepository);
+    }
 
     @Test
     void userCannotUpdateAnAddressTheyDoNotOwn() {
