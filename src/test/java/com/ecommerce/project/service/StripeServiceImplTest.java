@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +61,7 @@ class StripeServiceImplTest {
     @Test
     void acceptsASucceededPaymentMatchingTheServerSideCart() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 2, 10, 19.99);
+        Cart cart = cart(20L, 2, 10, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_valid", "succeeded", 3_998L, "eur", "10", "20");
         when(paymentIntentService.retrieve("pi_valid")).thenReturn(intent);
@@ -73,7 +74,7 @@ class StripeServiceImplTest {
     @Test
     void rejectsAPaymentThatHasNotSucceeded() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 2, 10, 19.99);
+        Cart cart = cart(20L, 2, 10, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_pending", "processing", 3_998L, "eur", "10", "20");
         when(paymentIntentService.retrieve("pi_pending")).thenReturn(intent);
@@ -86,7 +87,7 @@ class StripeServiceImplTest {
     @Test
     void rejectsAnAmountThatDoesNotMatchTheCurrentCart() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 2, 10, 19.99);
+        Cart cart = cart(20L, 2, 10, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_wrong_amount", "succeeded", 1_000L, "eur", "10", "20");
         when(paymentIntentService.retrieve("pi_wrong_amount")).thenReturn(intent);
@@ -99,7 +100,7 @@ class StripeServiceImplTest {
     @Test
     void rejectsANonEuroPayment() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 2, 10, 19.99);
+        Cart cart = cart(20L, 2, 10, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_wrong_currency", "succeeded", 3_998L, "usd", "10", "20");
         when(paymentIntentService.retrieve("pi_wrong_currency")).thenReturn(intent);
@@ -112,7 +113,7 @@ class StripeServiceImplTest {
     @Test
     void rejectsAPaymentCreatedForAnotherUserOrCart() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 2, 10, 19.99);
+        Cart cart = cart(20L, 2, 10, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_other_owner", "succeeded", 3_998L, "eur", "99", "20");
         when(paymentIntentService.retrieve("pi_other_owner")).thenReturn(intent);
@@ -125,7 +126,7 @@ class StripeServiceImplTest {
     @Test
     void rejectsAQuantityThatExceedsCurrentStock() throws Exception {
         User user = user(10L);
-        Cart cart = cart(20L, 3, 2, 19.99);
+        Cart cart = cart(20L, 3, 2, "19.99");
         PaymentIntent intent = paymentIntent(
                 "pi_no_stock", "succeeded", 5_997L, "eur", "10", "20");
         when(paymentIntentService.retrieve("pi_no_stock")).thenReturn(intent);
@@ -141,12 +142,12 @@ class StripeServiceImplTest {
         return user;
     }
 
-    private Cart cart(Long cartId, int cartQuantity, int stockQuantity, double unitPrice) {
+    private Cart cart(Long cartId, int cartQuantity, int stockQuantity, String unitPrice) {
         Product product = new Product();
         product.setProductId(30L);
         product.setProductName("Keyboard");
         product.setQuantity(stockQuantity);
-        product.setSpecialPrice(unitPrice);
+        product.setSpecialPrice(new BigDecimal(unitPrice));
 
         CartItem item = new CartItem();
         item.setProduct(product);

@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -208,7 +209,8 @@ class OrderServiceImplTest {
         assertThat(paymentCaptor.getValue().getPgPaymentId()).isEqualTo("pi_valid");
         assertThat(paymentCaptor.getValue().getPgStatus()).isEqualTo("succeeded");
         assertThat(orderCaptor.getValue().getEmail()).isEqualTo("buyer@example.com");
-        assertThat(orderCaptor.getValue().getTotalAmount()).isEqualTo(39.98);
+        assertThat(orderCaptor.getValue().getTotalAmount())
+                .isEqualByComparingTo("39.98");
         assertThat(orderCaptor.getValue().getOrderStatus()).isEqualTo("Accepted");
         assertThat(orderCaptor.getValue().getAddress()).isSameAs(address);
         assertThat(lockedProduct.getQuantity()).isEqualTo(8);
@@ -249,13 +251,13 @@ class OrderServiceImplTest {
 
     private Cart cart(User user, int quantity, int stock) {
         Product product = product(30L, stock);
-        product.setSpecialPrice(19.99);
+        product.setSpecialPrice(new BigDecimal("19.99"));
 
         CartItem item = new CartItem();
         item.setProduct(product);
         item.setQuantity(quantity);
-        item.setDiscount(0.0);
-        item.setProductPrice(19.99);
+        item.setDiscount(BigDecimal.ZERO);
+        item.setProductPrice(new BigDecimal("19.99"));
 
         Cart cart = new Cart();
         cart.setCartId(20L);

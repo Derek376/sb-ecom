@@ -35,7 +35,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.Set;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -131,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setEmail(user.getEmail());
         order.setOrderDate(LocalDate.now());
-        order.setTotalAmount(BigDecimal.valueOf(paymentIntent.getAmount(), 2).doubleValue());
+        order.setTotalAmount(BigDecimal.valueOf(paymentIntent.getAmount(), 2));
         order.setOrderStatus("Accepted");
         order.setAddress(address);
 
@@ -266,8 +265,9 @@ public class OrderServiceImpl implements OrderService {
         dto.setOrderItems(sellerItems);
         dto.setPayment(null);
         dto.setTotalAmount(sellerItems.stream()
-                .mapToDouble(item -> item.getOrderedProductPrice() * item.getQuantity())
-                .sum());
+                .map(item -> item.getOrderedProductPrice()
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
         return dto;
     }
 

@@ -2,6 +2,7 @@ package com.ecommerce.project.payload;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -10,6 +11,8 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
@@ -32,11 +35,13 @@ public class ProductDTO {
 
     @NotNull
     @Positive
-    private Double price;
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal price;
 
     @NotNull
     @DecimalMin("0.0")
     @DecimalMax("100.0")
-    private Double discount;
-    private Double specialPrice;
+    @Digits(integer = 3, fraction = 2)
+    private BigDecimal discount;
+    private BigDecimal specialPrice;
 }

@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Set;
 
@@ -90,9 +92,8 @@ public class ProductServiceImpl implements ProductService {
             product.setImage("default.png");
             product.setCategory(category);
             product.setUser(authUtil.loggedInUser());
-            double specialPrice = product.getPrice() -
-                    product.getPrice() * product.getDiscount() * 0.01;
-            product.setSpecialPrice(specialPrice);
+            product.setSpecialPrice(calculateSpecialPrice(
+                    product.getPrice(), product.getDiscount()));
             Product savedProduct = productRepository.save(product);
             return modelMapper.map(savedProduct, ProductDTO.class);
         } else {
@@ -268,9 +269,8 @@ public class ProductServiceImpl implements ProductService {
         productFromDb.setQuantity(product.getQuantity());
         productFromDb.setDiscount(product.getDiscount());
         productFromDb.setPrice(product.getPrice());
-        double specialPrice = product.getPrice()
-                - product.getPrice() * product.getDiscount() * 0.01;
-        productFromDb.setSpecialPrice(specialPrice);
+        productFromDb.setSpecialPrice(calculateSpecialPrice(
+                product.getPrice(), product.getDiscount()));
 
         Product savedProduct = productRepository.save(productFromDb);
 
@@ -347,6 +347,11 @@ public class ProductServiceImpl implements ProductService {
     private Product getOwnedProduct(Long productId) {
         return productRepository.findByProductIdAndUserUserId(productId, authUtil.loggedInUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+    }
+
+    private BigDecimal calculateSpecialPrice(BigDecimal price, BigDecimal discount) {
+        BigDecimal discountAmount = price.multiply(discount).movePointLeft(2);
+        return price.subtract(discountAmount).setScale(2, RoundingMode.HALF_UP);
     }
 
     private Pageable createPage(Integer pageNumber, Integer pageSize,

@@ -18,6 +18,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -89,7 +90,8 @@ public class CartServiceImpl implements CartService {
 
         cart.getCartItems().add(newCartItem);
 
-        cart.setTotalPrice(cart.getTotalPrice() + (product.getSpecialPrice() * quantity));
+        cart.setTotalPrice(cart.getTotalPrice().add(
+                product.getSpecialPrice().multiply(BigDecimal.valueOf(quantity))));
         rotateCheckoutToken(cart);
         cartRepository.save(cart);
 
@@ -192,7 +194,8 @@ public class CartServiceImpl implements CartService {
             cartItem.setProductPrice(product.getSpecialPrice());
             cartItem.setQuantity(newQuantity);
             cartItem.setDiscount(product.getDiscount());
-            cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
+            cart.setTotalPrice(cart.getTotalPrice().add(
+                    cartItem.getProductPrice().multiply(BigDecimal.valueOf(quantity))));
             rotateCheckoutToken(cart);
             cartRepository.save(cart);
             cartItemRepository.save(cartItem);
@@ -220,7 +223,8 @@ public class CartServiceImpl implements CartService {
         if (cartItem == null) {
             throw new ResourceNotFoundException("Product", "productId", productId);
         }
-        cart.setTotalPrice(cart.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity()));
+        cart.setTotalPrice(cart.getTotalPrice().subtract(
+                cartItem.getProductPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))));
         rotateCheckoutToken(cart);
         cartItemRepository.deleteCartItemByProductIdAndCartId(productId, cartId);
         return "Product " + cartItem.getProduct().getProductName() + " has been removed from the cart";
@@ -251,11 +255,13 @@ public class CartServiceImpl implements CartService {
             throw new APIexception("Product " + product.getProductName() + " does not exist in the cart");
         }
 
-        double cartPrice = cart.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity());
+        BigDecimal cartPrice = cart.getTotalPrice().subtract(
+                cartItem.getProductPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
 
         cartItem.setProductPrice(product.getSpecialPrice());
 
-        cart.setTotalPrice(cartPrice + (cartItem.getProductPrice() * cartItem.getQuantity()));
+        cart.setTotalPrice(cartPrice.add(
+                cartItem.getProductPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))));
         rotateCheckoutToken(cart);
 
         cartItemRepository.save(cartItem);
@@ -272,7 +278,7 @@ public class CartServiceImpl implements CartService {
         Cart existingCart = cartRepository.findCartByEmail(emailId);
         if (existingCart == null) {
             existingCart = new Cart();
-            existingCart.setTotalPrice(0.00);
+            existingCart.setTotalPrice(BigDecimal.ZERO);
             existingCart.setUser(authUtil.loggedInUser());
             rotateCheckoutToken(existingCart);
             existingCart = cartRepository.save(existingCart);
@@ -280,7 +286,7 @@ public class CartServiceImpl implements CartService {
             cartItemRepository.deleteAllByCartId(existingCart.getCartId());
         }
 
-        double totalPrice = 0.00;
+        BigDecimal totalPrice = BigDecimal.ZERO;
         Set<Long> productIds = new HashSet<>();
 
         for (CartItemDTO cartItemDTO : cartItems) {
@@ -303,7 +309,8 @@ public class CartServiceImpl implements CartService {
             }
 
             //product.setQuantity(product.getQuantity() - quantity);
-            totalPrice += product.getSpecialPrice() * quantity;
+            totalPrice = totalPrice.add(
+                    product.getSpecialPrice().multiply(BigDecimal.valueOf(quantity)));
 
             CartItem cartItem = new CartItem();
             cartItem.setProduct(product);
@@ -328,7 +335,7 @@ public class CartServiceImpl implements CartService {
         }
 
         Cart cart = new Cart();
-        cart.setTotalPrice(0.00);
+        cart.setTotalPrice(BigDecimal.ZERO);
         cart.setUser(authUtil.loggedInUser());
         rotateCheckoutToken(cart);
         Cart newCart = cartRepository.save(cart);

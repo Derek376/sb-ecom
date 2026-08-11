@@ -6,6 +6,8 @@ import com.ecommerce.project.repositories.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 public class AnalyticsServiceImp implements AnalyticsService {
 
@@ -21,11 +23,11 @@ public class AnalyticsServiceImp implements AnalyticsService {
 
         long productCount = productRepository.count();
         long totalOrders = orderRepository.count();
-        Double totalRevenue = orderRepository.getTotalRevenue();
+        BigDecimal totalRevenue = orderRepository.getTotalRevenue();
 
         response.setProductCount(String.valueOf(productCount));
         response.setTotalOrders(String.valueOf(totalOrders));
-        response.setTotalRevenue(String.valueOf(totalRevenue != null ? totalRevenue : 0.0));
+        response.setTotalRevenue((totalRevenue != null ? totalRevenue : BigDecimal.ZERO).toPlainString());
         return response;
     }
 }

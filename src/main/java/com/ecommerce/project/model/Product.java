@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,9 +32,14 @@ public class Product {
     @Size(min=6,message = "product description must contain at least 6 characters.")
     private String description;
     private Integer quantity;
-    private Double price; // 100
-    private Double discount; // 25
-    private Double specialPrice; // 75
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal price;
+
+    @Column(precision = 5, scale = 2, nullable = false)
+    private BigDecimal discount;
+
+    @Column(precision = 12, scale = 2, nullable = false)
+    private BigDecimal specialPrice;
 
     @ManyToOne
     @JoinColumn(name="category_id")

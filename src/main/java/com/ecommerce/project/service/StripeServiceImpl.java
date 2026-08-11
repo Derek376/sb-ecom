@@ -132,7 +132,7 @@ public class StripeServiceImpl implements StripeService {
             if (item.getQuantity() > item.getProduct().getQuantity()) {
                 throw new APIexception("Not enough stock for " + item.getProduct().getProductName());
             }
-            BigDecimal unitPrice = BigDecimal.valueOf(item.getProduct().getSpecialPrice());
+            BigDecimal unitPrice = item.getProduct().getSpecialPrice();
             total = total.add(unitPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
         }
 
