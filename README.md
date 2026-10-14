@@ -154,27 +154,3 @@ sent to the React application.
 - [Derek376 on GitHub](https://github.com/Derek376)
 
 MIT — see [LICENSE](LICENSE).
-
-## Portfolio demo
-
-The portfolio deployment enables demo mode by default (`app.demo.enabled=${DEMO_ENABLED:true}`).
-Set `DEMO_ENABLED=false` to disable demo entry and seed initialization. The existing demo
-accounts remain read-only even when entry is disabled. Existing JWTs expire according to
-the normal JWT expiry configuration.
-
-- `GET /api/auth/demo` reports availability.
-- `POST /api/auth/demo-login` accepts `{ "role": "admin" | "seller" | "customer" }`
-  and requires a CSRF token, just like normal login. It issues the existing HttpOnly JWT cookie.
-- Auth responses include `demo`, derived from the persisted account flag, never the request.
-- Demo identities retain normal role/ownership rules. All unsafe requests are rejected with
-  `403` and `code: DEMO_READ_ONLY`, except POST login, role switching and logout.
-- Startup creates three accounts (`demo-admin`, `demo-seller`, `demo-customer`) with random
-  encoded passwords, eight seller products, three categories, a fictional customer address,
-  and eight fictional orders. No payment provider is called. Images are bundled SVGs.
-- Initialization is additive and repeatable. It does not replace existing data or promote
-  accounts with conflicting names; a reserved-name conflict fails startup explicitly.
-- The portfolio catalog and admin metrics include seed data. Customer carts stay in the
-  browser and checkout is a preview; no carts, payment intents or orders are persisted.
-
-After deployment, verify `/api/auth/demo`, switch through the three roles, and confirm a
-write request with a valid demo cookie and CSRF token returns `DEMO_READ_ONLY`.

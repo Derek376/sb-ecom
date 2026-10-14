@@ -6,6 +6,12 @@ import com.ecommerce.project.repositories.*;
 import com.ecommerce.project.security.jwt.JwtUtils;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.id.IdentifierGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +26,10 @@ import java.util.*;
 @Service
 @Transactional
 public class DemoService {
+    private static final Logger log = LoggerFactory.getLogger(DemoService.class);
+
+    @PersistenceContext
+    private EntityManager entityManager;
     private final UserRepository users;
     private final RoleRepository roles;
     private final CategoryRepository categories;
@@ -82,6 +92,7 @@ public class DemoService {
                 {"Weekend Backpack", "Accessories", "69.00", "backpack"}
         };
         List<Product> existing = products.findAll();
+        advanceProductIdsPastExistingCatalog(existing);
         for (String[] item : items) {
             Product product = existing.stream().filter(p -> p.getUser() != null
                     && Objects.equals(p.getUser().getUserId(), seller.getUserId())
@@ -122,6 +133,26 @@ public class DemoService {
             line.setQuantity(2); line.setDiscount(product.getDiscount()); line.setOrderedProductPrice(product.getSpecialPrice());
             order.getOrderItems().add(line); orders.save(order);
         }
+    }
+
+    private void advanceProductIdsPastExistingCatalog(List<Product> existing) {
+        if (existing.isEmpty()) return;
+        long maximumId = existing.stream().mapToLong(Product::getProductId).max().orElseThrow();
+        SessionImplementor session = entityManager.unwrap(SessionImplementor.class);
+        var generator = session.getFactory().getMappingMetamodel()
+                .getEntityDescriptor(Product.class).getGenerator();
+        if (!(generator instanceof IdentifierGenerator ids)) {
+            throw new IllegalStateException("Demo initialization requires the product sequence generator");
+        }
+
+        // Imported rows can leave AUTO's sequence behind their IDs. Advance through
+        // Hibernate itself so both its pooled allocation and the database sequence
+        // move forward together. Nothing is persisted or removed here; gaps are safe.
+        long candidate;
+        do {
+            candidate = ((Number) ids.generate(session, new Product())).longValue();
+        } while (candidate <= maximumId);
+        log.info("Product ID generator advanced beyond existing catalog maximum {}", maximumId);
     }
 
     private User account(String username, AppRole role) {
