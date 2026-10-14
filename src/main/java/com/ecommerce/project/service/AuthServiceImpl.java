@@ -73,6 +73,8 @@ public class AuthServiceImpl implements AuthService {
                 userDetails.getEmail()
         );
 
+        response.setDemo(userRepository.findByUserName(userDetails.getUsername())
+                .map(user -> Boolean.TRUE.equals(user.getDemoAccount())).orElse(false));
         return new AuthenticationResult(response, jwtCookie);
     }
 
@@ -136,6 +138,8 @@ public class AuthServiceImpl implements AuthService {
 
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
                 userDetails.getUsername(), roles, userDetails.getEmail());
+        response.setDemo(userRepository.findByUserName(userDetails.getUsername())
+                .map(user -> Boolean.TRUE.equals(user.getDemoAccount())).orElse(false));
         return response;
     }
 

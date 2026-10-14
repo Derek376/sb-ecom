@@ -41,6 +41,9 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    // Nullable for accounts created before demo mode was introduced.
+    private Boolean demoAccount = false;
+
     public User(String userName, String email, String password) {
         this.userName = userName;
         this.email = email;

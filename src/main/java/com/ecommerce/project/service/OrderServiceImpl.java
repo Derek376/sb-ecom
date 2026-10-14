@@ -23,7 +23,7 @@ import com.ecommerce.project.util.AuthUtil;
 import com.ecommerce.project.util.SortUtil;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -174,6 +174,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderResponse getAllOrders(Integer pageNumber, Integer pageSize,
                                       String sortBy, String sortOrder) {
         Pageable page = createPage(pageNumber, pageSize, sortBy, sortOrder);
@@ -203,6 +204,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderResponse getAllSellerOrders(Integer pageNumber, Integer pageSize,
                                             String sortBy, String sortOrder) {
         Long sellerId = authUtil.loggedInUserId();
@@ -211,6 +213,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderDTO> getUserOrders(String email) {
         return orderRepository.findByEmailOrderByOrderDateDesc(email).stream()
                 .map(this::toOrderDTO)

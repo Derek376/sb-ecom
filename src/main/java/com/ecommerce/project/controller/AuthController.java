@@ -24,6 +24,22 @@ public class AuthController {
     @Autowired
     AuthService authService;
 
+    @Autowired
+    com.ecommerce.project.service.DemoService demoService;
+
+    @GetMapping("/demo")
+    public Map<String, Boolean> demoAvailability() {
+        return Map.of("enabled", demoService.isEnabled());
+    }
+
+    @PostMapping("/demo-login")
+    public ResponseEntity<UserInfoResponse> demoLogin(
+            @Valid @RequestBody com.ecommerce.project.security.request.DemoLoginRequest request) {
+        AuthenticationResult result = demoService.login(request.role());
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, result.getJwtCookie().toString())
+                .body(result.getResponse());
+    }
+
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         AuthenticationResult result = authService.login(loginRequest);

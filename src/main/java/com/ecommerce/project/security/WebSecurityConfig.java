@@ -43,6 +43,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthTokenFilter authTokenFilter;
 
+    @Autowired
+    private com.ecommerce.project.repositories.UserRepository userRepository;
+
     @Value("${app.jwt.cookie.secure:true}")
     private boolean cookieSecure;
 
@@ -79,8 +82,9 @@ public class WebSecurityConfig {
                         -> auth.requestMatchers(HttpMethod.POST,
                                         "/api/auth/signup",
                                         "/api/auth/signin",
+                                        "/api/auth/demo-login",
                                         "/api/auth/signout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf", "/api/auth/demo").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
@@ -93,6 +97,7 @@ public class WebSecurityConfig {
         http.authenticationProvider(authenticationProvider());
 
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new DemoReadOnlyFilter(userRepository), AuthTokenFilter.class);
 
         http.headers(headers -> headers.frameOptions(
                 HeadersConfigurer.FrameOptionsConfig::sameOrigin
